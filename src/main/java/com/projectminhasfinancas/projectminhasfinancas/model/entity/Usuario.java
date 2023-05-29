@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
-@Table( name = "usuario" , schema = "financas")
+@Table
 @Builder
 @Data
 @NoArgsConstructor
