@@ -1,5 +1,6 @@
 package com.projectminhasfinancas.projectminhasfinancas.api.resources;
 
+import com.projectminhasfinancas.projectminhasfinancas.api.dto.AtualizaStatusDTO;
 import com.projectminhasfinancas.projectminhasfinancas.api.dto.LancamentoDTO;
 import com.projectminhasfinancas.projectminhasfinancas.model.entity.Lancamento;
 import com.projectminhasfinancas.projectminhasfinancas.model.entity.TipoLancamento;
@@ -46,8 +47,8 @@ public class LancamentoResource {
         lancamentoFiltro.setAno(ano);
 
         Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
-        if (usuario.isPresent()) {
-            return ResponseEntity.badRequest().body("N„o foi possÌvel realizar a consulta. Usuario n„o encontrado por Id informado.");
+        if (!usuario.isPresent()) {
+            return ResponseEntity.badRequest().body("N√£o foi possivel realizar a consulta. Usuario n√£o encontrado por Id informado.");
         } else {
             lancamentoFiltro.setUsuario(usuario.get());
         }
@@ -78,7 +79,24 @@ public class LancamentoResource {
             } catch (RegraNegocioException e) {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
-        }).orElseGet(() -> new ResponseEntity("Lancamento n„o encontrado na base de dados.", HttpStatus.BAD_REQUEST));
+        }).orElseGet(() -> new ResponseEntity("Lancamento n√£o encontrado na base de dados.", HttpStatus.BAD_REQUEST));
+    }
+
+    @PutMapping("{id}/atualiza-status")
+    public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto){
+        return service.obterPorId(id).map( entity -> {
+            StatusLancamento statusSelecionado = StatusLancamento.valueOf(dto.getStatus());
+            if(statusSelecionado == null){
+                return ResponseEntity.badRequest().body("N√£o foi poss√≠vel atualizar o status do lan√ßamento, envie um status v√°lido");
+            }
+            try{
+                entity.setStatus(statusSelecionado);
+                service.atualizar(entity);
+                return ResponseEntity.ok(entity);
+            }catch (RegraNegocioException e){
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }).orElseGet( () -> new ResponseEntity("Lan√ßamento n√£o encontrado na base de dados", HttpStatus.BAD_REQUEST));
     }
 
     @DeleteMapping("{id}")
@@ -87,8 +105,9 @@ public class LancamentoResource {
             service.deletar(entidade);
             return new ResponseEntity(HttpStatus.NO_CONTENT);
         }).orElseGet(() ->
-            new ResponseEntity("Lancamento n„o encontrado na base de dados.", HttpStatus.BAD_REQUEST));
+            new ResponseEntity("Lancamento n√£o encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
+
 
 
     private Lancamento converter(LancamentoDTO dto) {
@@ -99,11 +118,17 @@ public class LancamentoResource {
         lancamento.setMes(dto.getMes());
         lancamento.setValor(dto.getValor());
 
-        Usuario usuario = usuarioService.obterPorId(dto.getUsuario()).orElseThrow(() -> new RegraNegocioException("Usuario n„o encontrado por Id informado."));
+        Usuario usuario = usuarioService.obterPorId(dto.getUsuario()).orElseThrow(() -> new RegraNegocioException("Usuario n√£o encontrado por Id informado."));
 
         lancamento.setUsuario(usuario);
-        lancamento.setTipo(TipoLancamento.valueOf(dto.getTipo()));
-        lancamento.setStatus(StatusLancamento.valueOf(dto.getStatus()));
+
+        if(dto.getTipo() != null) {
+            lancamento.setTipo(TipoLancamento.valueOf(dto.getTipo()));
+        }
+
+        if(dto.getStatus() != null) {
+            lancamento.setStatus(StatusLancamento.valueOf(dto.getStatus()));
+        }
 
         return lancamento;
     }

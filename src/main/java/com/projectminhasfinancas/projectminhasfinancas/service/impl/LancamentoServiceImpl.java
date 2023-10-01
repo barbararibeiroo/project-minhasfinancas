@@ -1,6 +1,7 @@
 package com.projectminhasfinancas.projectminhasfinancas.service.impl;
 
 import com.projectminhasfinancas.projectminhasfinancas.model.entity.Lancamento;
+import com.projectminhasfinancas.projectminhasfinancas.model.entity.TipoLancamento;
 import com.projectminhasfinancas.projectminhasfinancas.model.enums.StatusLancamento;
 import com.projectminhasfinancas.projectminhasfinancas.repository.LancamentoRepository;
 import com.projectminhasfinancas.projectminhasfinancas.service.LancamentoService;
@@ -21,6 +22,7 @@ public class LancamentoServiceImpl implements LancamentoService {
 
     @Autowired
     private LancamentoRepository repository;
+
 
     @Override
     @Transactional
@@ -65,27 +67,41 @@ public class LancamentoServiceImpl implements LancamentoService {
     @Override
     public void validar(Lancamento lancamento){
         if(lancamento.getDescricao() == null || lancamento.getDescricao().trim().equals("")){
-            throw new RegraNegocioException("Informe uma descrição válida.");
+            throw new RegraNegocioException("Informe uma descriÃ§Ã£o vÃ¡lida.");
         }
         if(lancamento.getMes() == null || lancamento.getMes() < 1 || lancamento.getMes() > 12){
-            throw new RegraNegocioException("Informe um mês válido.");
+            throw new RegraNegocioException("Informe um mÃªs vÃ¡lido.");
         }
         if(lancamento.getAno() == null || lancamento.getAno().toString().length() != 4){
-            throw new RegraNegocioException("Informe um Ano válido.");
+            throw new RegraNegocioException("Informe um Ano vÃ¡lido.");
         }
         if(lancamento.getUsuario() == null || lancamento.getUsuario().getId() == null){
-            throw new RegraNegocioException("Informe um usuário.");
+            throw new RegraNegocioException("Informe um usuÃ¡rio.");
         }
         if(lancamento.getValor() == null || lancamento.getValor().compareTo(BigDecimal.ZERO) < 1){
-            throw new RegraNegocioException("Informe um valor válido.");
+            throw new RegraNegocioException("Informe um valor vÃ¡lido.");
         }
         if(lancamento.getTipo() == null){
-            throw new RegraNegocioException("Informe um tipo de Lançamento");
+            throw new RegraNegocioException("Informe um tipo de LanÃ§amento");
         }
     }
 
     @Override
     public Optional<Lancamento> obterPorId(Long id) {
         return repository.findById(id);
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal obterSaldoPorUsuario(Long id) {
+       BigDecimal receitas = repository.obterSaldoPorTipoLancamentoEUsuario(id, TipoLancamento.RECEITA.name());
+       BigDecimal despesas = repository.obterSaldoPorTipoLancamentoEUsuario(id, TipoLancamento.DESPESA.name());
+        if (receitas == null){
+            receitas = BigDecimal.ZERO;
+        }
+        if (despesas == null){
+            despesas = BigDecimal.ZERO;
+        }
+        return  receitas.subtract(despesas);
     }
 }
